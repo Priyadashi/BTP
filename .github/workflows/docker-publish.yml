@@ -1,0 +1,35 @@
+name: Build & Push Docker
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.REGISTRY }}/ml-btp:${{ github.sha }} .
+
+    - name: Log in to registry
+      run: echo "${{ secrets.REG_TOKEN }}" | docker login ${{ secrets.REGISTRY }} --username "${{ secrets.REG_USER }}" --password-stdin
+
+    - name: Push image
+      run: docker push ${{ secrets.REGISTRY }}/ml-btp:${{ github.sha }}
+
+    - name: Set IMAGE output
+      id: vars
+      run: echo "::set-output name=image::${{ secrets.REGISTRY }}/ml-btp:${{ github.sha }}"
+
+    - name: Update Kubernetes manifest
+      run: sed -i "s|\$\\{\\{ secrets.IMAGE \\}\\}|${{ steps.vars.outputs.image }}|g" deployment.yaml
+
+    - name: Commit updated manifest
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+        git add deployment.yaml
+        git commit -m "Set image to ${{ steps.vars.outputs.image }}"
+        git push
