@@ -1,4 +1,4 @@
-name: Build & Push Docker
+name: Build & Push to Docker Hub
 
 on:
   push:
@@ -7,24 +7,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Log in to GitHub Container Registry
+    - name: Log in to Docker Hub
       run: |
         echo "${{ secrets.REG_TOKEN }}" \
-          | docker login ghcr.io \
+          | docker login docker.io \
               --username "${{ secrets.REG_USER }}" \
               --password-stdin
 
-    - name: Build Docker image
+    - name: Build and tag image
       run: |
         docker build \
-          -t ghcr.io/${{ secrets.REG_USER }}/ml-btp:latest .
+          -t docker.io/${{ secrets.REG_USER }}/ml-btp:latest .
 
-    - name: Push Docker image
+    - name: Push image
       run: |
         docker push \
-          ghcr.io/${{ secrets.REG_USER }}/ml-btp:latest
+          docker.io/${{ secrets.REG_USER }}/ml-btp:latest
